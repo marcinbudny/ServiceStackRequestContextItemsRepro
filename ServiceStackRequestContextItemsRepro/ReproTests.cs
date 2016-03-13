@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Threading.Tasks;
 using FluentAssertions;
 using ServiceStack;
@@ -15,15 +16,7 @@ namespace ServiceStackRequestContextItemsRepro
 
         public ReproTests()
         {
-            _appHost = new AppHost();
-
-            _appHost.GlobalRequestFilters.Add((request, response, dto) =>
-            {
-                var hasValue = dto as IHaveValue;
-                RequestContext.Instance.Items["Value"] = hasValue.Value;
-            });
-
-            _appHost
+            _appHost = new AppHost()
                 .Init()
                 .Start($"http://*:{ServicePort}/");
         }
@@ -40,6 +33,13 @@ namespace ServiceStackRequestContextItemsRepro
         {
             await RunTest(i => 
                 new JsonHttpClient($"http://localhost:{ServicePort}").GetAsync(new GetValueV2 {Value = i}));
+        }
+
+        [Fact]
+        public async Task Each_Request_Has_Own_Items_V3()
+        {
+            await RunTest(i => 
+                new JsonHttpClient($"http://localhost:{ServicePort}").GetAsync(new GetValueV3 {Value = i}));
         }
 
         private static async Task RunTest(Func<int, Task<GetValueResponse>> startCall)
